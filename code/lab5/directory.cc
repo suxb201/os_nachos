@@ -23,6 +23,7 @@ void Directory::FetchFrom(OpenFile *file) {
 
 // 写回
 void Directory::WriteBack(OpenFile *file) {
+    printf("----- %d\n",tableSize * sizeof(DirectoryEntry));
     (void) file->WriteAt((char *) table, tableSize * sizeof(DirectoryEntry), 0);
 }
 

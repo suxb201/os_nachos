@@ -56,9 +56,11 @@ void Append(char *from, char *to, int half) {
     OpenFile *openFile;
     int amountRead, fileLength;
     char *buffer;
+    char *buffer_save;
 
 //  start position for appending
     int start;
+    int length_save;
 
 // Open UNIX file
     if ((fp = fopen(from, "r")) == NULL) {
@@ -89,34 +91,18 @@ void Append(char *from, char *to, int half) {
     ASSERT(openFile != NULL);
     // append from position "start"
     start = openFile->Length();
-    if (half) {
-        start = start / 2;
-//        buffer = new char[TransferSize];
-//        while ((amountRead = openFile->Read(buffer, TransferSize)) > 0)
-//            for (i = 0; i < amountRead; i++)
-//                printf("%c", buffer[i]);
-//        delete[] buffer;
-    }
+
+
+    if (half) start = start / 2;
     openFile->Seek(start);
-
-
-
 
 // Append the data in TransferSize chunks
     buffer = new char[TransferSize];
     while ((amountRead = fread(buffer, sizeof(char), TransferSize, fp)) > 0) {
-        int result;
-//	printf("start value: %d,  amountRead %d, ", start, amountRead);
-//	result = openFile->WriteAt(buffer, amountRead, start);
-        result = openFile->Write(buffer, amountRead);
-//	printf("result of write: %d\n", result);
+        int result = openFile->Write(buffer, amountRead);
         ASSERT(result == amountRead);
-        start += amountRead;
-//	ASSERT(start == openFile->Length());
     }
     delete[] buffer;
-
-// Write the inode back to the disk, because we have changed it
     openFile->WriteBack();
     printf("inodes have been written back\n");
 

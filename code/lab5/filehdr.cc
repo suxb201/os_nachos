@@ -15,19 +15,16 @@ bool FileHeader::Allocate(BitMap *freeMap, int fileSize) {
     return TRUE;
 }
 
-bool FileHeader::Allocate(BitMap *freeMap,  int fileSize, int incrementBytes) {
+bool FileHeader::Allocate(BitMap *freeMap, int fileSize, int incrementBytes) {
+    printf("fileSize: %d, incrementBytes: %d.\n", fileSize, incrementBytes);
     if (numSectors > 30)
         return false;
-    if ((fileSize == 0) && (incrementBytes > 0)) {
-        if (freeMap->NumClear() < 1)
-            return false;
-        dataSectors[0] = freeMap->Find();
-        numSectors = 1;
-        numBytes = 0;
-    }
+
     numBytes = fileSize;
     int offset = numBytes % SectorSize;
-    int newSectorBytes = incrementBytes - (SectorSize - (offset + 1));
+    if (offset == 0) offset = SectorSize;
+    int newSectorBytes = incrementBytes - (SectorSize - (offset));
+    printf("newSectorBytes: %d\n", newSectorBytes);
     if (newSectorBytes <= 0) {
         numBytes = numBytes + incrementBytes;
         return true;
@@ -71,7 +68,8 @@ void FileHeader::Print() {
     int i, j, k;
     char *data = new char[SectorSize];
 
-    printf("FileHeader contents.  File size: %d.  File blocks:\n", numBytes);
+    printf("FileHeader contents.  \nFile size: %d.  \nFile blocks:\n",
+           numBytes);
     for (i = 0; i < numSectors; i++)
         printf("%d ", dataSectors[i]);
     printf("\nFile contents:\n");
@@ -85,5 +83,6 @@ void FileHeader::Print() {
         }
         printf("\n");
     }
+    printf("********************************************\n");
     delete[] data;
 }

@@ -67,7 +67,7 @@ int OpenFile::WriteAt(char *from, int numBytes, int position) {
 
     if ((numBytes <= 0) || (position > fileLength))
         return -1;                // 参数错误
-    if ((position + numBytes) > fileLength) { // 这里有问题
+    if ((position + numBytes) > fileLength) {
         int incrementBytes = (position + numBytes) - fileLength;
         BitMap *freeBitMap = fileSystem->getBitMap();
         bool hdrRet;

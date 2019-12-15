@@ -20,15 +20,6 @@
 #include "openfile.h"
 
 #define FileNameMaxLen 		9	// for simplicity, we assume 
-					// file names are <= 9 characters long
-
-// The following class defines a "directory entry", representing a file
-// in the directory.  Each entry gives the name of the file, and where
-// the file's header is to be found on disk.
-//
-// Internal data structures kept public so that Directory operations can
-// access them directly.
-
 class DirectoryEntry {
   public:
     bool inUse;				// Is this directory entry in use?
@@ -38,15 +29,6 @@ class DirectoryEntry {
 					// the trailing '\0'
 };
 
-// The following class defines a UNIX-like "directory".  Each entry in
-// the directory describes a file, and where to find it on disk.
-//
-// The directory data structure can be stored in memory, or on disk.
-// When it is on disk, it is stored as a regular Nachos file.
-//
-// The constructor initializes a directory structure in memory; the
-// FetchFrom/WriteBack operations shuffle the directory information
-// from/to disk. 
 
 class Directory {
   public:
