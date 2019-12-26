@@ -29,7 +29,7 @@
 
 Scheduler::Scheduler()
 { 
-    readyList = new List; 
+    readyList = new List;
 } 
 
 //----------------------------------------------------------------------
@@ -105,7 +105,7 @@ void Scheduler::Run (Thread *nextThread)
     currentThread->setStatus(RUNNING);      // nextThread is now running
     
     DEBUG('t', "Switching from thread \"%s\" to thread \"%s\"\n",
-	  oldThread->getName(), nextThread->getName());
+	  (char*)oldThread->getName(), (char*)nextThread->getName());
     
     // This is a machine-dependent assembly language routine defined 
     // in switch.s.  You may have to think

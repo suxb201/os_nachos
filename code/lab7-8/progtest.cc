@@ -19,15 +19,13 @@
 // 	Run a user program.  Open the executable, load it into
 //	memory, and jump to it.
 //----------------------------------------------------------------------
-
 void StartProcess(char *filename) {
     OpenFile *executable = fileSystem->Open(filename);
-    AddrSpace *space;
     if (executable == NULL) {
         printf("Unable to open file %s\n", filename);
         return;
     }
-    space = new AddrSpace(executable);
+    AddrSpace *space = new AddrSpace(executable);
     currentThread->space = space;
     space->Print();
     delete executable;            // close file
@@ -39,6 +37,15 @@ void StartProcess(char *filename) {
     // machine->Run never returns;
     // the address space exits by doing the syscall "exit"
 }
+void StartProcess(int spaceId) {
+    currentThread->space->InitRegisters();
+    currentThread->space->RestoreState();
+    printf("machine->Run(); start\n");
+    machine->Run();
+    printf("machine->Run(); ok\n");
+    ASSERT(FALSE);
+}
+
 
 // Data structures needed for the console test.  Threads making
 // I/O requests wait on a Semaphore to delay until the I/O completes.

@@ -1,31 +1,9 @@
-// addrspace.cc 
-//	Routines to manage address spaces (executing user programs).
-//
-//	In order to run a user program, you must:
-//
-//	1. link with the -N -T 0 option 
-//	2. run coff2noff to convert the object file to Nachos format
-//		(Nachos object code format is essentially just a simpler
-//		version of the UNIX executable object code format)
-//	3. load the NOFF file into the Nachos file system
-//		(if you haven't implemented the file system yet, you
-//		don't need to do this last step)
-//
-// Copyright (c) 1992-1993 The Regents of the University of California.
-// All rights reserved.  See copyright.h for copyright notice and limitation 
-// of liability and disclaimer of warranty provisions.
-
 #include "copyright.h"
 #include "system.h"
 #include "addrspace.h"
 #include "noff.h"
-
-//----------------------------------------------------------------------
-// SwapHeader
-// 	Do little endian to big endian conversion on the bytes in the 
-//	object file header, in case the file was generated on a little
-//	endian machine, and we're now running on a big endian machine.
-//----------------------------------------------------------------------
+#include "bitmap.h"
+#include <string.h>
 
 static void SwapHeader(NoffHeader *noffH) {
     noffH->noffMagic = WordToHost(noffH->noffMagic);
@@ -40,22 +18,29 @@ static void SwapHeader(NoffHeader *noffH) {
     noffH->uninitData.inFileAddr = WordToHost(noffH->uninitData.inFileAddr);
 }
 
-//----------------------------------------------------------------------
-// AddrSpace::AddrSpace
-// 	Create an address space to run a user program.
-//	Load the program from a file "executable", and set everything
-//	up so that we can start executing user instructions.
-//
-//	Assumes that the object code file is in NOFF format.
-//
-//	First, set up the translation from program memory to physical 
-//	memory.  For now, this is really simple (1:1), since we are
-//	only uniprogramming, and we have a single unsegmented page table
-//
-//	"executable" is the file containing the object code to load into memory
-//----------------------------------------------------------------------
+#define MAX_USERPROCESSES 256
+BitMap *bitmap;
+bool ThreadMap[MAX_USERPROCESSES];
 
 AddrSpace::AddrSpace(OpenFile *executable) {
+    // ---------------------------
+    bool hasPid = false;
+    for (int i = 100; i < MAX_USERPROCESSES; i++) {
+        if (!ThreadMap[i]) {
+            ThreadMap[i] = true;
+            spaceID = i;
+            hasPid = true;
+            break;
+        }
+    }
+    if (!hasPid) {
+        printf("too many processes in NACHOS\n");
+        return;
+    }
+    if (bitmap == NULL) {
+        bitmap = new BitMap(NumPhysPages);
+    }
+
     NoffHeader noffH; // Noff Header 中有四项：magixnumber code init uninit
     unsigned int i, size;
     executable->ReadAt((char *) &noffH, sizeof(noffH), 0);
@@ -78,26 +63,27 @@ AddrSpace::AddrSpace(OpenFile *executable) {
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
         pageTable[i].virtualPage = i;    // vir 和 phy 相等， 1:1 映射
-        pageTable[i].physicalPage = i;
+        pageTable[i].physicalPage = bitmap->Find();
         pageTable[i].valid = TRUE;  // 未初始化
         pageTable[i].use = FALSE;   // 未使用
         pageTable[i].dirty = FALSE; // 未修改
         pageTable[i].readOnly = FALSE;  // 如果这个页全是代码段，可以设置为只读
     }
-// zero out the entire address space, to zero the unitialized data segment 
-// and the stack segment
-    bzero(machine->mainMemory, size);
-
-// then, copy in the code and data segments into memory
+    // 先读入 tmp_momory
+    char *tmp_momory = new char[size];
     if (noffH.code.size > 0) {
-        DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", noffH.code.virtualAddr, noffH.code.size);
-        executable->ReadAt(&(machine->mainMemory[noffH.code.virtualAddr]), noffH.code.size, noffH.code.inFileAddr);
+        executable->ReadAt(&(tmp_momory[noffH.code.virtualAddr]), noffH.code.size, noffH.code.inFileAddr);
     }
     if (noffH.initData.size > 0) {
-        DEBUG('a', "Initializing data segment, at 0x%x, size %d\n", noffH.initData.virtualAddr, noffH.initData.size);
-        executable->ReadAt(&(machine->mainMemory[noffH.initData.virtualAddr]), noffH.initData.size,
-                           noffH.initData.inFileAddr);
+        executable->ReadAt(&(tmp_momory[noffH.initData.virtualAddr]), noffH.initData.size, noffH.initData.inFileAddr);
     }
+    // 逐页转存到 mainMemory
+    for (int i = 0; i < numPages; i++) {
+        memcpy(&(machine->mainMemory[pageTable[i].physicalPage * PageSize]),
+               &(tmp_momory[pageTable[i].virtualPage * PageSize]), PageSize);
+    }
+    delete tmp_momory;
+
 }
 
 //----------------------------------------------------------------------
@@ -106,6 +92,10 @@ AddrSpace::AddrSpace(OpenFile *executable) {
 //----------------------------------------------------------------------
 
 AddrSpace::~AddrSpace() {
+    ThreadMap[spaceID] = 0;
+    for (int i = 0; i < numPages; i++) {
+        bitmap->Clear(pageTable[i].physicalPage);
+    }
     delete[] pageTable;
 }
 

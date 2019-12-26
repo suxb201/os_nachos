@@ -92,12 +92,12 @@ main(int argc, char **argv) {
     DEBUG('t', "Entering main");
     (void) Initialize(argc, argv);
 
-#ifdef THREADS
-    ThreadTest();
-#if 0
-    SynchTest();
-#endif
-#endif
+//#ifdef THREADS
+//    ThreadTest();
+//#if 0
+//    SynchTest();
+//#endif
+//#endif
 
     for (argc--, argv++; argc > 0; argc -= argCount, argv += argCount) {
         argCount = 1;
